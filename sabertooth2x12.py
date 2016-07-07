@@ -1,4 +1,4 @@
-import serial, logging
+import serial, logging, time
 
 class Sabertooth():
     """
@@ -40,6 +40,7 @@ class Sabertooth():
         self.saber.port = '/dev/%s' % (self.port)
         self.saber.open()
         self.isOpen = self.saber.isOpen()
+        self.saber.flushOutput()
         return None
     
     def __del__(self):
@@ -54,7 +55,15 @@ class Sabertooth():
             message - speed to send with command 0-100 in % percent
         """
         checksum = (self.address + command + message) & 127
-        sentBytes = self.saber.write("".join(chr(i) for i in [self.address, command, message, checksum]))
+        #print((self.address))
+        #print((command))
+        #print((message))
+        #print((checksum))
+        s = ""
+        seq = (chr(self.address), chr(command), chr(message), chr(checksum))
+        data = s.join(seq)
+        #sentBytes = self.saber.write("".join(chr(i) for i in [self.address, command, message, checksum]))
+        sentBytes = self.saber.write(data)
         self.saber.flush()
         return sentBytes
 
