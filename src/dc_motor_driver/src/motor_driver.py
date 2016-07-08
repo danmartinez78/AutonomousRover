@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     driver = MotorDriver(motor_gain, wheel_sep, wheel_radius)
     
-    rospy.Subscriber('cmd_vel', Twist, driver.drive, queue_size=1)
+    rospy.Subscriber('cmd_vel', Twist, driver.drive, queue_size=5)
 
     rate = rospy.Rate(10)
 
@@ -93,6 +93,6 @@ if __name__ == '__main__':
         timeout = 0.1
     
     while not rospy.is_shutdown():
-        #if driver.last_msg_time is not None and (((rospy.get_rostime() - driver.last_msg_time).to_sec()) > timeout) and driver.motors_on:
-            #driver.turnOffMotors()
+        if driver.last_msg_time is not None and (((rospy.get_rostime() - driver.last_msg_time).to_sec()) > timeout) and driver.motors_on:
+            driver.turnOffMotors()
         rate.sleep()
