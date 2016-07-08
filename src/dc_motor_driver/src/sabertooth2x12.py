@@ -19,7 +19,8 @@ class Sabertooth():
 	    "leftMM": 0x0b,
 
             "ramp": 0x10,
-            "timeout": 0x14
+            "timeout": 0x14,
+            "baud_rate": 0x0f
             }
 
     def __init__(self, port="ttyS0", address=128):
@@ -54,6 +55,7 @@ class Sabertooth():
                 fwd_left, fwd_right, rev_left, rev_right, ramp
             message - speed to send with command 0-100 in % percent
         """
+        self.saber.flush()
         checksum = (self.address + command + message) & 127
         sentBytes = self.saber.write("".join(chr(i) for i in [self.address, command, message, checksum]))
         self.saber.flush()

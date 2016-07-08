@@ -62,8 +62,8 @@ class Sabertooth():
         s = ""
         seq = (chr(self.address), chr(command), chr(message), chr(checksum))
         data = s.join(seq)
-        #sentBytes = self.saber.write("".join(chr(i) for i in [self.address, command, message, checksum]))
-        sentBytes = self.saber.write(data)
+        sentBytes = self.saber.write("".join(chr(i) for i in [self.address, command, message, checksum]))
+        #sentBytes = self.saber.write(data)
         self.saber.flush()
         return sentBytes
 

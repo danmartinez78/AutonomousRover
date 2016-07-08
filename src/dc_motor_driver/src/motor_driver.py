@@ -3,7 +3,6 @@ import rospy
 import yaml
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor
 import sabertooth2x12 as SB
 
 class MotorDriver:
@@ -13,7 +12,7 @@ class MotorDriver:
         self._wheel_rad = wheel_radius
         self._gear_ratio = 7.5*motor_gain
         self._max_rpm = 200
-        self._max_pwm = 127
+        self._max_pwm = 100
 
         self._mh = SB.Sabertooth()
         self._left_direction = "fwd"
@@ -43,7 +42,7 @@ class MotorDriver:
             pwm_left = -pwm_left
         else:
             self._left_direction = "fwd"
-        pwm_left = max(min(pwm_left,255),0)
+        pwm_left = max(min(pwm_left,100),0)
         #if pwm_left < 45:
         #    pwm_left = 0
         if (pwm_right < 0):
@@ -51,7 +50,7 @@ class MotorDriver:
             pwm_right = -pwm_right
         else:
             self._right_direction = "fwd"
-        pwm_right = max(min(pwm_right,255),0)
+        pwm_right = max(min(pwm_right,100),0)
 
         #if pwm_right < 45:
         #    pwm_right = 0
@@ -83,7 +82,7 @@ if __name__ == '__main__':
 
     driver = MotorDriver(motor_gain, wheel_sep, wheel_radius)
     
-    rospy.Subscriber('cmd_vel', Twist, driver.drive)
+    rospy.Subscriber('cmd_vel', Twist, driver.drive, queue_size=1)
 
     rate = rospy.Rate(10)
 
@@ -94,6 +93,6 @@ if __name__ == '__main__':
         timeout = 0.1
     
     while not rospy.is_shutdown():
-        if driver.last_msg_time is not None and (((rospy.get_rostime() - driver.last_msg_time).to_sec()) > timeout) and driver.motors_on:
-            driver.turnOffMotors()
+        #if driver.last_msg_time is not None and (((rospy.get_rostime() - driver.last_msg_time).to_sec()) > timeout) and driver.motors_on:
+            #driver.turnOffMotors()
         rate.sleep()

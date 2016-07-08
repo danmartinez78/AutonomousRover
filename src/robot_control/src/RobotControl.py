@@ -43,8 +43,7 @@ class RobotControl(object):
         """
         meas = self.ros_interface.get_measurements()
         imu_meas = self.ros_interface.get_imu()
-
-        self.ros_interface.command_velocity(0.3, 0.1)
+        self.ros_interface.command_velocity(0.0, 0.0)
         
         return
     
