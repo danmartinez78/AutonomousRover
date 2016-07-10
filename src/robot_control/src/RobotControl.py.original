@@ -42,26 +42,6 @@ class RobotControl(object):
         """
         meas = self.ros_interface.get_measurements()
         imu_meas = self.ros_interface.get_imu()
-	
-	state = [0, 0, 0]
-        target_tag = 0.0
-        if (meas):
-            for tag in meas:
-                if tag[3] == target_tag:
-                    goal = [tag[0], tag[1], tag[2]]
-                    cmd = self.diff_drive_controller.compute_vel(state, goal)
-                    if cmd[2] == 0:
-                        self.robot_sim.command_velocity(cmd[0], cmd[1])
-                    else:
-                        self.robot_sim.command_velocity(0, 0)
-                        print("TARGET REACHED!")
-                else:
-                    print("TARGET NOT IN SITE")
-                    self.robot_sim.command_velocity(0, 0.0)
-        else:
-            print("NO TARGETS")
-            self.robot_sim.command_velocity(0, 0.0)
-	
         #time = rospy.get_time()
         #while True:
             #if (rospy.get_time() - time > 1):
