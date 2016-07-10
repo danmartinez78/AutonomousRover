@@ -14,7 +14,7 @@ class DiffDriveController():
         self.kb=0
         self.MAX_SPEED = max_speed
         self.MAX_OMEGA = max_omega
-        self.threshold = 0.1
+        self.threshold = 0.5
         
     def compute_vel(self, state, goal):
         """
