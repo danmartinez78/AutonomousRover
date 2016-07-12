@@ -34,6 +34,7 @@ class RobotControl(object):
         # Uncomment as completed
         #self.kalman_filter = KalmanFilter(world_map)
         self.diff_drive_controller = DiffDriveController(max_speed, max_omega)
+        self.noneCounter = 0
 
     def process_measurements(self):
         """ 
@@ -44,7 +45,7 @@ class RobotControl(object):
         imu_meas = self.ros_interface.get_imu()
         state = [0,0,0]
         target_tag = 0.0
-        print(meas)
+        #print(meas)
         if (meas!=None):
             for tag in meas:
                 if tag[3] == target_tag:
@@ -52,13 +53,18 @@ class RobotControl(object):
                     cmd = self.diff_drive_controller.compute_vel(state, goal)
                     if cmd[2] == 0:
                         self.ros_interface.command_velocity(cmd[0], cmd[1])
+                        self.noneCounter = 0;
                     else:
                         self.ros_interface.command_velocity(0.0, 0.0)
-                       #print("TARGET REACHED!")
+                        print("TARGET REACHED!")
                 else:
-                    #print("TARGET NOT IN SITE")
+                    print("TARGET NOT IN SITE")
                     self.ros_interface.command_velocity(0.0, 0.0)
-    
+        if (meas == None):
+            self.noneCounter = self.noneCounter + 1
+            if self.noneCounter > 10:
+                self.ros_interface.command_velocity(0.0, 0.0)
+                self.noneCounter = 0
         return
     
 def main(args):

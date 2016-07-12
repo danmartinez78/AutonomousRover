@@ -25,7 +25,7 @@ class MotorDriver:
         
     # recommended for auto-disabling motors on shutdown!
     def turnOffMotors(self):
-	self._mh.stop
+	self._mh.stop()
         self.motors_on = False
         
     def drive(self,twist):
@@ -90,7 +90,7 @@ if __name__ == '__main__':
         timeout = 1
         rospy.loginfo("[motor_driver]: Test mode on")
     else:
-        timeout = 0.1
+        timeout = 0.25 # was 0.1
     
     while not rospy.is_shutdown():
         if driver.last_msg_time is not None and (((rospy.get_rostime() - driver.last_msg_time).to_sec()) > timeout) and driver.motors_on:
