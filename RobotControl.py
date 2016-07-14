@@ -89,25 +89,29 @@ class RobotControl(object):
         # TODO for student: Comment this when running on the robot 
 
         #print(meas)
-        imu_meas = self.robot_sim.get_imu()
+
         #print(imu_meas)
         #cmd = self.trackTag(10.0, meas)
-        #self.cmd = (0.5,0.1)
+        #self.cmd = (0.5,0.0)
 
-        if self.cmd != None:
-            self.timed_out = False
-            self.timeout = 0
-            self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
-            self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas)
-        else:
-            self.timeout += 1
-        if (self.timeout > 5 and self.timed_out == False):
-            self.timed_out = True
-            self.robot_sim.command_velocity(0, 0)
+        # if self.cmd != None:
+        #     self.timed_out = False
+        #     self.timeout = 0
+        #     self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
+        #     self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas)
+        # else:
+        #     self.timeout += 1
+        # if (self.timeout > 5 and self.timed_out == False):
+        #     self.timed_out = True
+        #     self.robot_sim.command_velocity(0, 0)
+        imu_meas = self.robot_sim.get_imu()
         meas = self.robot_sim.get_measurements()
-        self.state = self.kalman_filter.step_filter(None, None, meas)
+
+        self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
+        self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
         self.robot_sim.set_est_state(self.state)
         self.cmd = self.diff_drive_controller.compute_vel(self.state, self.pos_goal)
+
         # TODO for student: Use this when transferring code to robot
         # meas = self.ros_interface.get_measurements()
         # imu_meas = self.ros_interface.get_imu()
