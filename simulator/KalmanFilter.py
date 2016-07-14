@@ -30,11 +30,13 @@ class KalmanFilter:
 
         # YOUR CODE HERE
         self.x_t = np.array([0, 0, 0])
+        print self.x_t
         self.x = 0
         self.y = 0
         self.theta = 0
         self.P_t = np.eye(3) * 1000000
-
+        self.n = np.array([0, 0, 0])
+        print self.n
 
 
 
@@ -80,19 +82,22 @@ class KalmanFilter:
         #print v
         dt = imu_meas[4] - self.last_time
         self.last_time = imu_meas[4]
-        dtheta = imu_meas[3]
+        dtheta = float(imu_meas[3])
         self.theta += dtheta*dt
         self.theta = self.theta%(2*math.pi)
-        dx = v * math.cos(self.theta)*dt
-        dy = v * math.sin(self.theta)*dt
+        dx = float(v * math.cos(self.theta)*dt)
+        dy = float(v * math.sin(self.theta)*dt)
         #print dx,dy,dtheta
         self.x += dx
         self.y += dy
-        self.P_t += np.eye(3)
         self.x_t = np.array([self.x, self.y, self.theta]) # probably should fix this
         #print self.x_t
         # propogate covariance
-        self.P_t =+ self.Q_t
+        dfdx = np.eye(3) + np.array([[0,0,-dy],[0,0,dx],[0,0,0]])
+        print dfdx
+        #dfdn = np.array([[-math.sin(self.theta)*dt, 0, 0],[math.cos(self.theta)*dt, 0, 1]])
+        self.P_t = dfdx*self.P_t*dfdx.transpose() + self.Q_t
+        print dfdx*self.P_t*dfdx.transpose()
         pass
 
     def update(self, z_t):
