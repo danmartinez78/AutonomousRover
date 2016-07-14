@@ -141,7 +141,7 @@ class RobotSim(object):
         # Main plot function calls
         self.__line, = plt.plot(self.__x_gt[0,0], self.__x_gt[1,0],'o')
         plt.axis('equal')
-        axes = plt.axes(xlim=(-0.5,2),ylim=(0,2.5))
+        axes = plt.axes(xlim=(0,2.5),ylim=(0,2.5))
         axes.set_aspect('equal')
        
 
@@ -233,8 +233,6 @@ class RobotSim(object):
         Outputs: None, but controls the robot
         """
         noise = np.random.normal(0,self.__control_noise)
-        if vx == 0 and wz == 0:
-            noise = [0,0,0]
         self.__vel = min(max(vx + noise[0],0),self.__MAX_VELOCITY)
         self.__omega = min(max(wz + noise[1],-self.__MAX_OMEGA),self.__MAX_OMEGA)
 
@@ -383,16 +381,16 @@ class RobotSim(object):
             for s in range(len(self.__shapes)):
                 pts = np.zeros((len(self.__shapes[s]),2))
                 for k in range(len(self.__shapes[s])):
-                    cos = math.cos(self.__est_state[2,0])
-                    sin = math.sin(self.__est_state[2,0])
+                    cos = math.cos(self.__est_state[2])
+                    sin = math.sin(self.__est_state[2])
                     
-                    pts[k][0] = self.__est_state[0,0] + cos*self.__shapes[s][k][0] - sin*self.__shapes[s][k][1]
-                    pts[k][1] = self.__est_state[1,0] + sin*self.__shapes[s][k][0] + cos*self.__shapes[s][k][1]
+                    pts[k][0] = self.__est_state[0] + cos*self.__shapes[s][k][0] - sin*self.__shapes[s][k][1]
+                    pts[k][1] = self.__est_state[1] + sin*self.__shapes[s][k][0] + cos*self.__shapes[s][k][1]
                 self.__bot_parts_est[s].set_xy(pts)
             self.__est_state = None
 
         # Finish plotting stuff
-        plt.axes(xlim=(-0.5,2),ylim=(0,2.5))
+        plt.axes(xlim=(0,2.5),ylim=(0,2.5))
 
         # Plot title
         plt.title("At timestep: %.2f" %(self.__frame_num*self.__dt))

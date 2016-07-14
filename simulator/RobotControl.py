@@ -64,6 +64,8 @@ class RobotControl(object):
         self.theta = pos_init[2]
         self.timeout = 0
         self.timed_out = False
+        self.cmd = np.array([0,0])
+        self.state = np.array([0, 0, 0])
 
         # TODO for student: Comment this when running on the robot 
         self.robot_sim = RobotSim(world_map, occupancy_map, pos_init, pos_goal,
@@ -85,21 +87,30 @@ class RobotControl(object):
         are done. This function is called at 60Hz
         """
         # TODO for student: Comment this when running on the robot 
-        meas = self.robot_sim.get_measurements()
+
         #print(meas)
-        imu_meas = self.robot_sim.get_imu()
+
         #print(imu_meas)
-        cmd = self.trackTag(10.0, meas)
-        if cmd != None:
-            self.timed_out = False
-            self.timeout = 0
-            self.robot_sim.command_velocity(cmd[0], cmd[1])
-            self.kalman_filter.step_filter(cmd[0], imu_meas, meas)
-        else:
-            self.timeout += 1
-        if (self.timeout > 5 and self.timed_out == False):
-            self.timed_out = True
-            self.robot_sim.command_velocity(0, 0)
+        #cmd = self.trackTag(10.0, meas)
+        #self.cmd = (0.5,0.0)
+
+        # if self.cmd != None:
+        #     self.timed_out = False
+        #     self.timeout = 0
+        #     self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
+        #     self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas)
+        # else:
+        #     self.timeout += 1
+        # if (self.timeout > 5 and self.timed_out == False):
+        #     self.timed_out = True
+        #     self.robot_sim.command_velocity(0, 0)
+        imu_meas = self.robot_sim.get_imu()
+        meas = self.robot_sim.get_measurements()
+
+        self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
+        self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
+        self.robot_sim.set_est_state(self.state)
+        self.cmd = self.diff_drive_controller.compute_vel(self.state, self.pos_goal)
 
         # TODO for student: Use this when transferring code to robot
         # meas = self.ros_interface.get_measurements()
@@ -120,6 +131,7 @@ class RobotControl(object):
                         return cmd
         return None
 
+
 def main(args):
     # Load parameters from yaml
     param_path = 'params.yaml' # rospy.get_param("~param_path")
@@ -131,8 +143,8 @@ def main(args):
     world_map = np.array(params['world_map'])
     pos_init = np.array(params['pos_init'])
     pos_goal = np.array(params['pos_goal'])
-    print(pos_init)
-    print(pos_goal)
+    # print(pos_init)
+    # print(pos_goal)
     max_vel = params['max_vel']
     max_omega = params['max_omega']
     t_cam_to_body = np.array(params['t_cam_to_body'])

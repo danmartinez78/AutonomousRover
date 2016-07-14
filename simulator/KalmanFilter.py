@@ -3,15 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from matplotlib import patches
-#import pylab
+# import pylab
 import time
 import math
+from numpy.linalg import inv
+
 
 class KalmanFilter:
     """
     Class to keep track of the estimate of the robots current state using the
     Kalman Filter
     """
+
     def __init__(self, markers):
         """
         Initialize all necessary components for Kalman Filter, using the
@@ -24,24 +27,26 @@ class KalmanFilter:
             moment
         """
         self.markers = markers
-        self.last_time = 0 #None # Used to keep track of time between measurements
+        self.last_time = 0  # None # Used to keep track of time between measurements
         self.Q_t = np.eye(3)
         self.R_t = np.eye(3)
 
         # YOUR CODE HERE
         self.x_t = np.array([0, 0, 0])
-        print self.x_t
         self.x = 0
         self.y = 0
         self.theta = 0
+        self.dx = 0
+        self.dy = 0
+        self.dtheta = 0
+        self.dt = 0
+        self.z_t = np.array([0, 0, 0])
         self.P_t = np.eye(3) * 1000000
+        #print self.P_t
         self.n = np.array([0, 0, 0])
-        print self.n
+        #print self.n
 
-
-
-        
-    def step_filter(self, v, imu_meas, z_t):
+    def step_filter(self, v=None, imu_meas=None, z_t=None):
         """
         Perform step in filter, called every iteration (on robot, at 60Hz)
         Inputs:
@@ -53,12 +58,15 @@ class KalmanFilter:
         x_t - current estimate of the state
         """
         # YOUR CODE HERE
-        self.prediction(v, imu_meas)
-        #print(self.x_t)
+        if v!=None and imu_meas!= None:
+            #print "PREDICTION"
+            self.prediction(v, imu_meas)
+            #print self.x_t
+            #print self.P_t
         if z_t != None and z_t != []:
+            #print "UPDATE"
             self.update(z_t)
-        #print(self.x_t)
-        pass
+        return self.x_t
 
     def prediction(self, v, imu_meas):
         """
@@ -77,27 +85,27 @@ class KalmanFilter:
             covariance
         """
         # YOUR CODE HERE
-        # propogate pose x,y,theta
-        #print self.x_t
-        #print v
-        dt = imu_meas[4] - self.last_time
+        # propagate pose x,y,theta
+        # print self.x_t
+        # print v
+        self.dt = imu_meas[4] - self.last_time
         self.last_time = imu_meas[4]
-        dtheta = float(imu_meas[3])
-        self.theta += dtheta*dt
-        self.theta = self.theta%(2*math.pi)
-        dx = float(v * math.cos(self.theta)*dt)
-        dy = float(v * math.sin(self.theta)*dt)
-        #print dx,dy,dtheta
-        self.x += dx
-        self.y += dy
-        self.x_t = np.array([self.x, self.y, self.theta]) # probably should fix this
-        #print self.x_t
-        # propogate covariance
-        dfdx = np.eye(3) + np.array([[0,0,-dy],[0,0,dx],[0,0,0]])
-        print dfdx
-        #dfdn = np.array([[-math.sin(self.theta)*dt, 0, 0],[math.cos(self.theta)*dt, 0, 1]])
-        self.P_t = dfdx*self.P_t*dfdx.transpose() + self.Q_t
-        print dfdx*self.P_t*dfdx.transpose()
+        self.dtheta = float(imu_meas[3])
+        self.theta += self.dtheta * self.dt
+        self.theta = self.theta % (2 * math.pi)
+        self.dx = float(v * math.cos(self.theta) * self.dt)
+        self.dy = float(v * math.sin(self.theta) * self.dt)
+        # print dx,dy,dtheta
+        self.x += self.dx
+        self.y += self.dy
+        self.x_t = np.array([self.x, self.y, self.theta])  # probably should fix this
+        # print self.x_t
+        # propagate covariance
+        dfdx = np.eye(3) + np.array([[0, 0, -self.dy], [0, 0, self.dx], [0, 0, 0]])
+        dfdxt = dfdx.transpose()
+        # dfdn = np.array([[-math.sin(self.theta)*dt, 0, 0],[math.cos(self.theta)*dt, 0, 1]])
+        self.P_t = dfdx * self.P_t * dfdxt
+        self.P_t += self.Q_t
         pass
 
     def update(self, z_t):
@@ -115,21 +123,47 @@ class KalmanFilter:
         predicted_covariance - a 3 by 3 numpy array of the updated covariance
         """
         # YOUR CODE HERE
-        #print(z_t)
+        # print(z_t)
         # iterate through detected tags
+        #print z_t
         for tag in z_t:
             # for each tag -> find world frame coords from self.markers
-            x_r = tag[0]
-            y_r = tag[1]
-            theta_r = tag[2]
-        for ref in self.markers:
+            xr = tag[0]
+            yr = tag[1]
+            tr = tag[2]
+            for ref in self.markers:
                 if tag[3] == ref[3]:
-                    x_w = ref[0]
-                    y_w = ref[1]
-                    theta_w = ref[2]
+                    xw = ref[0]
+                    yw = ref[1]
+                    tw = ref[2]
                     # with body frame & world frame coords of tag -> find world frame coords of robot
-                    
+                    x = xw - xr*math.cos(tr-tw) - yr*math.sin(tr-tw)
+                    y = yw - yr*math.cos(tr-tw) + xr*math.sin(tr-tw)
+                    theta = math.atan2(-math.sin(tr-tw), math.cos(tr-tw))
+                    x += self.dx
+                    y += self.dy
+                    theta += self.dtheta
+                    self.z_t = np.array([x, y, theta])
+                    #print "observation"
+                    #print self.z_t, tag[3]
                     # calc kalman gain
-        # combine observation w/ prediction
-        # update covariance
+                    #print "gain"
+                    dhdx = np.eye(3)
+                    dhdxt = dhdx.transpose()
+                    c = dhdx * self.P_t * dhdxt + self.R_t
+                    k = self.P_t * dhdxt * inv(c)
+                    #print k
+                    # combine observation w/ prediction
+                    #print "priori"
+                    #print self.x_t
+                    #print self.P_t
+                    #print "postori"
+                    self.x += k[0,0] * (x - self.x)
+                    self.y += k[1,1] * (y - self.y)
+                    self.theta += k[2,2] * (theta - self.theta)
+                    self.x_t = np.array([self.x, self.y, self.theta])
+                    #print self.x_t
+                    # update covariance
+                    self.P_t = self.P_t*(np.eye(3) - k*dhdx)
+                    #print self.P_t
         pass
