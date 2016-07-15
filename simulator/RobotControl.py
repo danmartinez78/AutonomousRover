@@ -95,12 +95,13 @@ class RobotControl(object):
         are done. This function is called at 60Hz
         """
         # TODO for student: Comment this when running on the robot
-        # imu_meas = self.robot_sim.get_imu()
-        # meas = self.robot_sim.get_measurements()
-        # self.cmd = self.diff_drive_controller.compute_vel(self.state, self.path[15])
+        imu_meas = self.robot_sim.get_imu()
+        meas = self.robot_sim.get_measurements()
+        # self.cmd = self.diff_drive_controller.compute_vel(self.state, self.path[5])
+        # print self.cmd
         # self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
-        # self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
-        # self.robot_sim.set_est_state(self.state)
+        self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
+        self.robot_sim.set_est_state(self.state)
         goal = self.path[self.index]
         self.cmd = self.diff_drive_controller.compute_vel(self.state, goal)
         print goal
@@ -108,7 +109,7 @@ class RobotControl(object):
             self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
             imu_meas = self.robot_sim.get_imu()
             meas = self.robot_sim.get_measurements()
-            self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
+            self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, None)
             self.robot_sim.set_est_state(self.state)
             print self.cmd
             print self.state
