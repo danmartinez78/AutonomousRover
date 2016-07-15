@@ -142,7 +142,7 @@ class KalmanFilter:
                     theta = math.atan2(-math.sin(tr-tw), math.cos(tr-tw))
                     x += self.dx
                     y += self.dy
-                    theta += self.dtheta
+                    #theta += self.dtheta
                     self.z_t = np.array([x, y, theta])
                     #print "observation"
                     #print self.z_t, tag[3]

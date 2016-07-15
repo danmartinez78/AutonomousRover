@@ -14,7 +14,7 @@ class DiffDriveController():
         self.kb=0
         self.MAX_SPEED = max_speed
         self.MAX_OMEGA = max_omega
-        self.threshold = 0.3
+        self.threshold = 0.1
         
     def compute_vel(self, state, goal):
         """
@@ -42,7 +42,6 @@ class DiffDriveController():
         beta = -state[2] - alpha
 
         vel_cmd = min(self.MAX_SPEED, self.kp*rho)
-        omega_cmd = min(self.MAX_OMEGA, self.ka*alpha + self.kb*beta)
+        omega_cmd = max(min(self.MAX_OMEGA, self.ka*alpha + self.kb*beta), -self.MAX_OMEGA)
 
         return([vel_cmd, omega_cmd, 0])
-        pass

@@ -7,6 +7,7 @@ Updated June 19 2016.
 
 import yaml
 import numpy as np
+import time
 
 import sys
 import math
@@ -58,14 +59,16 @@ class RobotControl(object):
         """
         self.pos_goal = pos_goal
         self.pos_init = pos_init
-        self.state = pos_init
+        self.state = np.array([0,0,0])
         self.x = pos_init[0]
         self.y = pos_init[1]
         self.theta = pos_init[2]
         self.timeout = 0
         self.timed_out = False
-        self.cmd = np.array([0,0])
-        self.state = np.array([0, 0, 0])
+        self.cmd = np.array([0,0,0])
+        self.state = pos_init
+        self.path = []
+        self.index = 1
 
         # TODO for student: Comment this when running on the robot 
         self.robot_sim = RobotSim(world_map, occupancy_map, pos_init, pos_goal,
@@ -80,37 +83,39 @@ class RobotControl(object):
         self.kalman_filter = KalmanFilter(world_map)
         self.diff_drive_controller = DiffDriveController(max_speed, max_omega)
 
+        # initiallize pose and plan path
+        self.path = dijkstras(occupancy_map,x_spacing,y_spacing,pos_init,pos_goal)
+        print self.path
+        print len(self.path)
+
     def process_measurements(self):
         """ 
         YOUR CODE HERE
         Main loop of the robot - where all measurements, control, and esimtaiton
         are done. This function is called at 60Hz
         """
-        # TODO for student: Comment this when running on the robot 
-
-        #print(meas)
-
-        #print(imu_meas)
-        #cmd = self.trackTag(10.0, meas)
-        #self.cmd = (0.5,0.0)
-
-        # if self.cmd != None:
-        #     self.timed_out = False
-        #     self.timeout = 0
-        #     self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
-        #     self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas)
-        # else:
-        #     self.timeout += 1
-        # if (self.timeout > 5 and self.timed_out == False):
-        #     self.timed_out = True
-        #     self.robot_sim.command_velocity(0, 0)
-        imu_meas = self.robot_sim.get_imu()
-        meas = self.robot_sim.get_measurements()
-
-        self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
-        self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
-        self.robot_sim.set_est_state(self.state)
-        self.cmd = self.diff_drive_controller.compute_vel(self.state, self.pos_goal)
+        # TODO for student: Comment this when running on the robot
+        # imu_meas = self.robot_sim.get_imu()
+        # meas = self.robot_sim.get_measurements()
+        # self.cmd = self.diff_drive_controller.compute_vel(self.state, self.path[15])
+        # self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
+        # self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
+        # self.robot_sim.set_est_state(self.state)
+        goal = self.path[self.index]
+        self.cmd = self.diff_drive_controller.compute_vel(self.state, goal)
+        print goal
+        if self.cmd[2] == 0:
+            self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
+            imu_meas = self.robot_sim.get_imu()
+            meas = self.robot_sim.get_measurements()
+            self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
+            self.robot_sim.set_est_state(self.state)
+            print self.cmd
+            print self.state
+        else:
+            self.index += 1
+            print self.index
+            self.cmd[2] = 0
 
         # TODO for student: Use this when transferring code to robot
         # meas = self.ros_interface.get_measurements()
@@ -121,6 +126,7 @@ class RobotControl(object):
     def trackTag(self, tag, meas):
         state = [0, 0, 0]
         target_tag = tag
+        cmd = [0, 0]
         if (meas!=None):
             for tag in meas:
                 if tag[3] == target_tag:
@@ -128,6 +134,10 @@ class RobotControl(object):
                     cmd = self.diff_drive_controller.compute_vel(state, goal)
                     if cmd[2] != 1:
                         self.robot_sim.command_velocity(cmd[0], cmd[1])
+                        return cmd
+                    else:
+                        cmd = [0,0]
+                        self.robot_sim.command_velocity(0,0)
                         return cmd
         return None
 

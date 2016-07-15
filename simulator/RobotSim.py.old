@@ -51,7 +51,7 @@ class RobotSim(object):
         # How high to draw the markers in the simulation
         self.__marker_height = 0.1
         # Simulated IMU noise structure
-        self.__imu_noise = [0.05, 0.05, 0.05, 0.05]
+        self.__imu_noise = [0.05, 0.05, 0.05, 0.02]
         # Simulated control input noise structure
         self.__control_noise = [0.05, 0.05]
         # Simulated noise from image measurements
@@ -85,14 +85,6 @@ class RobotSim(object):
         self.__x_spacing = x_spacing
         self.__y_spacing = y_spacing
         self.markers = markers
-        self.markers_flipped = np.copy(self.markers)
-        for i in range(self.markers_flipped.shape[0]):
-            self.markers_flipped[i][2]+=np.pi
-            if self.markers_flipped[i][2] > np.pi:
-                self.markers_flipped[i][2]-=2*np.pi
-            elif self.markers_flipped[i][2] < np.pi:
-                self.markers_flipped[i][2]+=2*np.pi
-
         # Parameters used to update the robot in the simulation
         self.last_meas_time = -1
         self.last_imu_time = -1
@@ -105,6 +97,9 @@ class RobotSim(object):
         # For termination
         self.done=False
         self.__frame_num = 0
+        self.posx = 0
+        self.posy = 0
+        self.theta = 0
 
         plt.ion()
         self.__plot()
@@ -190,31 +185,31 @@ class RobotSim(object):
                     axes.add_patch(self.__obstacles[obs_iter])
                     obs_iter+=1
         # Markers
-        self.__markers = [ 0 for i in range(len(self.markers_flipped)) ]
-        self.__markers_dir = [ 0 for i in range(len(self.markers_flipped)) ]
-        for m in range(len(self.markers_flipped)):
-            angle=(self.markers_flipped[m][2]/np.pi)*180.0
-            R = np.array([[np.cos(self.markers_flipped[m][2]), -np.sin(self.markers_flipped[m][2])],
-                          [np.sin(self.markers_flipped[m][2]), np.cos(self.markers_flipped[m][2])]])
+        self.__markers = [ 0 for i in range(len(self.markers)) ]
+        self.__markers_dir = [ 0 for i in range(len(self.markers)) ]
+        for m in range(len(self.markers)):
+            angle=(self.markers[m][2]/np.pi)*180.0
+            R = np.array([[np.cos(self.markers[m][2]), -np.sin(self.markers[m][2])],
+                          [np.sin(self.markers[m][2]), np.cos(self.markers[m][2])]])
             offset = np.array([[self.__marker_width, self.__marker_height]]).T
             rotated_offset = np.dot(R,offset)
             
             self.__markers[m] = patches.Rectangle(
-                (self.markers_flipped[m][0] - rotated_offset[0]/2.,
-                 self.markers_flipped[m][1] - rotated_offset[1]/2.),
+                (self.markers[m][0] - rotated_offset[0]/2.,
+                 self.markers[m][1] - rotated_offset[1]/2.),
                 self.__marker_width,
                 self.__marker_height,
-                angle=(self.markers_flipped[m][2]/np.pi)*180.0,
+                angle=(self.markers[m][2]/np.pi)*180.0,
                 fill=True,facecolor='r',edgecolor='k')
             
             dir_offset = np.array([[-self.__marker_width, 0.04]]).T
             rotated_dir_offset = np.dot(R, dir_offset)
             self.__markers_dir[m] = patches.Rectangle(
-                (self.markers_flipped[m][0] - rotated_dir_offset[0]/2.,
-                 self.markers_flipped[m][1] - rotated_dir_offset[1]/2.),
+                (self.markers[m][0] - rotated_dir_offset[0]/2.,
+                 self.markers[m][1] - rotated_dir_offset[1]/2.),
                 self.__marker_width*0.5,
                 0.04,
-                angle=(self.markers_flipped[m][2]/np.pi)*180.0,
+                angle=(self.markers[m][2]/np.pi)*180.0,
                 fill=True,facecolor='r',edgecolor='k')
             axes.add_patch(self.__markers[m])
             axes.add_patch(self.__markers_dir[m])
@@ -233,8 +228,7 @@ class RobotSim(object):
         Outputs: None, but controls the robot
         """
         noise = np.random.normal(0,self.__control_noise)
-        if vx==0 and wz==0:
-            noise=[0,0,0]
+        noise = [0,0,0]
         self.__vel = min(max(vx + noise[0],0),self.__MAX_VELOCITY)
         self.__omega = min(max(wz + noise[1],-self.__MAX_OMEGA),self.__MAX_OMEGA)
 
@@ -279,17 +273,23 @@ class RobotSim(object):
             stamp. If no tags are seen, the function returns None.
         """
         curr_time = self.__frame_num*self.__dt
-        if curr_time - self.last_meas_time < self.__MEAS_RATE or len(self.markers_flipped) == 0:
+        if curr_time - self.last_meas_time < self.__MEAS_RATE or len(self.markers) == 0:
             return None
         self.last_meas_time = curr_time
-        self.__visible_markers = [False for i in range(len(self.markers_flipped))]
+        self.__visible_markers = [False for i in range(len(self.markers))]
 
         H_WR = self.__H(self.__x_gt[:,0])
         # Get measurements to the robot frame
         meas = []
 
-        for i in range(len(self.markers_flipped)):
-            H_WT = self.__H(self.markers[i])
+        for i in range(len(self.markers)):
+            marker_i = np.copy(self.markers[i])
+            marker_i[2]+=np.pi
+            if marker_i[2] > np.pi:
+                marker_i[2]-=2*np.pi
+            elif marker_i[2] < np.pi:
+                marker_i[2]+=2*np.pi
+            H_WT = self.__H(marker_i)#self.markers[i])
             H_RT = np.linalg.solve(H_WR,H_WT)
             
             x_new = H_RT[0:2,2]
@@ -298,7 +298,7 @@ class RobotSim(object):
                 np.absolute(np.arccos(x_new[0]/(math.sqrt(x_new[0]**2 + x_new[1]**2))))
             if abs(marker_view_angle) < self.__view_half_angle and abs(theta_new) < np.pi/3 and x_new[0] < 2:
                 self.__visible_markers[i] = True
-                meas_i = np.array([x_new[0],x_new[1], theta_new, self.markers_flipped[i][3], self.last_meas_time])
+                meas_i = np.array([x_new[0],x_new[1], theta_new, self.markers[i][3], self.last_meas_time])
                 meas_i[0:3] = meas_i[0:3] + np.array([np.random.normal(0, self.__image_noise)])
                 meas.append(meas_i.tolist())
         return meas
@@ -344,6 +344,9 @@ class RobotSim(object):
         posx  = self.__x_gt[0,0]
         posy  = self.__x_gt[1,0]
         theta = self.__x_gt[2,0]
+        self.posx  = self.__x_gt[0,0]
+        self.posy  = self.__x_gt[1,0]
+        self.theta = self.__x_gt[2,0]
         # Angles
         cos = math.cos(theta)
         sin = math.sin(theta)
