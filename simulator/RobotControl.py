@@ -87,6 +87,8 @@ class RobotControl(object):
         self.path = dijkstras(occupancy_map,x_spacing,y_spacing,pos_init,pos_goal)
         print self.path
         print len(self.path)
+        meas = self.robot_sim.get_measurements()
+        self.state = self.kalman_filter.step_filter(None, None, meas)
 
     def process_measurements(self):
         """ 
@@ -96,27 +98,19 @@ class RobotControl(object):
         """
         # TODO for student: Comment this when running on the robot
         imu_meas = self.robot_sim.get_imu()
-        meas = self.robot_sim.get_measurements()
         # self.cmd = self.diff_drive_controller.compute_vel(self.state, self.path[5])
         # print self.cmd
         # self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
-        self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
-        self.robot_sim.set_est_state(self.state)
         goal = self.path[self.index]
-        self.cmd = self.diff_drive_controller.compute_vel(self.state, goal)
-        print goal
+        self.cmd = self.diff_drive_controller.compute_vel(self.robot_sim.pose, goal)
         if self.cmd[2] == 0:
             self.robot_sim.command_velocity(self.cmd[0], self.cmd[1])
             imu_meas = self.robot_sim.get_imu()
             meas = self.robot_sim.get_measurements()
-            self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, None)
+            self.state = self.kalman_filter.step_filter(self.cmd[0], imu_meas, meas)
             self.robot_sim.set_est_state(self.state)
-            print self.cmd
-            print self.state
         else:
             self.index += 1
-            print self.index
-            self.cmd[2] = 0
 
         # TODO for student: Use this when transferring code to robot
         # meas = self.ros_interface.get_measurements()

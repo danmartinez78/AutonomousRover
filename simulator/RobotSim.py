@@ -55,7 +55,7 @@ class RobotSim(object):
         # Simulated control input noise structure
         self.__control_noise = [0.05, 0.05]
         # Simulated noise from image measurements
-        self.__image_noise = [0.01, 0.01, np.pi/180/2]
+        self.__image_noise = [0.000001, 0.0000001, np.pi/180/1000]
         # Maximum allowed angular velocity of the simulated robot (rad/s)
         self.__MAX_OMEGA = max_omega
         # Maximum allowed forward velocity of the simulated robot (m/s)
@@ -105,6 +105,7 @@ class RobotSim(object):
         # For termination
         self.done=False
         self.__frame_num = 0
+        self.pose = [0,0,0]
 
         plt.ion()
         self.__plot()
@@ -344,6 +345,7 @@ class RobotSim(object):
         posx  = self.__x_gt[0,0]
         posy  = self.__x_gt[1,0]
         theta = self.__x_gt[2,0]
+        self.pose = [posx, posy, theta]
         # Angles
         cos = math.cos(theta)
         sin = math.sin(theta)

@@ -29,7 +29,7 @@ class KalmanFilter:
         self.markers = markers
         self.last_time = 0  # None # Used to keep track of time between measurements
         self.Q_t = np.eye(3)
-        self.R_t = np.eye(3)
+        self.R_t = np.eye(3) * 0.5
 
         # YOUR CODE HERE
         self.x_t = np.array([0, 0, 0])
@@ -63,8 +63,12 @@ class KalmanFilter:
             self.prediction(v, imu_meas)
             #print self.x_t
             #print self.P_t
+        else:
+            self.dx = 0
+            self.dy = 0
+            self.dtheta = 0
+
         if z_t != None and z_t != []:
-            #print "UPDATE"
             self.update(z_t)
         return self.x_t
 
@@ -92,7 +96,6 @@ class KalmanFilter:
         self.last_time = imu_meas[4]
         self.dtheta = float(imu_meas[3])
         self.theta += self.dtheta * self.dt
-        self.theta = self.theta % (2 * math.pi)
         self.dx = float(v * math.cos(self.theta) * self.dt)
         self.dy = float(v * math.sin(self.theta) * self.dt)
         # print dx,dy,dtheta
@@ -142,7 +145,8 @@ class KalmanFilter:
                     theta = math.atan2(-math.sin(tr-tw), math.cos(tr-tw))
                     x += self.dx
                     y += self.dy
-                    #theta += self.dtheta
+                    theta += self.dtheta * self.dt
+                    # theta = theta % (2 * math.pi)
                     self.z_t = np.array([x, y, theta])
                     #print "observation"
                     #print self.z_t, tag[3]
