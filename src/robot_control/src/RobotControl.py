@@ -44,7 +44,7 @@ class RobotControl(object):
         meas = self.ros_interface.get_measurements()
         imu_meas = self.ros_interface.get_imu()
         state = [0,0,0]
-        target_tag = 0.0
+        target_tag = 7.0
         #print(meas)
         if (meas!=None):
             for tag in meas:
@@ -52,6 +52,7 @@ class RobotControl(object):
                     goal = [tag[0], tag[1], tag[2]]
                     cmd = self.diff_drive_controller.compute_vel(state, goal)
                     if cmd[2] == 0:
+                        print("TARGET IN SITE")
                         self.ros_interface.command_velocity(cmd[0], cmd[1])
                         self.noneCounter = 0;
                     else:
@@ -61,6 +62,7 @@ class RobotControl(object):
                     print("TARGET NOT IN SITE")
                     self.ros_interface.command_velocity(0.0, 0.0)
         if (meas == None):
+            print("Invalid Measurement")
             self.noneCounter = self.noneCounter + 1
             if self.noneCounter > 10:
                 self.ros_interface.command_velocity(0.0, 0.0)
