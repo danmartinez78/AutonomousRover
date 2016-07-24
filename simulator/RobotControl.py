@@ -68,7 +68,7 @@ class RobotControl(object):
         self.cmd = np.array([0,0,0])
         self.state = pos_init
         self.path = []
-        self.index = 1
+        self.index = 0
 
         # TODO for student: Comment this when running on the robot 
         self.robot_sim = RobotSim(world_map, occupancy_map, pos_init, pos_goal,

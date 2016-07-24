@@ -142,7 +142,7 @@ class RobotSim(object):
         # Main plot function calls
         self.__line, = plt.plot(self.__x_gt[0,0], self.__x_gt[1,0],'o')
         plt.axis('equal')
-        axes = plt.axes(xlim=(0,2.5),ylim=(0,2.5))
+        axes = plt.axes(xlim=(0,3.0),ylim=(0,3.0))
         axes.set_aspect('equal')
        
 
@@ -394,7 +394,7 @@ class RobotSim(object):
             self.__est_state = None
 
         # Finish plotting stuff
-        plt.axes(xlim=(0,2.5),ylim=(0,2.5))
+        plt.axes(xlim=(0,3.0),ylim=(0,3.0))
 
         # Plot title
         plt.title("At timestep: %.2f" %(self.__frame_num*self.__dt))
