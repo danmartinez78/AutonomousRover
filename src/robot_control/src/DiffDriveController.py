@@ -9,12 +9,12 @@ class DiffDriveController():
     """
     def __init__(self, max_speed, max_omega):
         # TODO for Student: Specify these parameters
-        self.kp=2
-        self.ka=6
+        self.kp=0.4
+        self.ka=1.2
         self.kb=0
         self.MAX_SPEED = max_speed
         self.MAX_OMEGA = max_omega
-        self.threshold = 0.4
+        self.threshold = 0.55
         
     def compute_vel(self, state, goal):
         """
@@ -33,7 +33,7 @@ class DiffDriveController():
         # YOUR CODE HERE
         dx = goal[0] - state[0]
         dy = goal[1] - state[1]
-        # print(",".join([str(dx), str(dy)]))
+        print(",".join([str(goal[0]), str(goal[1]), str(state[0]), str(state[1]), str(dx), str(dy)]))
 
         rho = math.sqrt(dx*dx + dy*dy)
         if rho < self.threshold:
@@ -41,8 +41,8 @@ class DiffDriveController():
         alpha = -state[2] + math.atan2(dy,dx)
         beta = -state[2] - alpha
 
-        vel_cmd = min(self.MAX_SPEED, self.kp*rho)
-        omega_cmd = min(self.MAX_OMEGA, self.ka*alpha + self.kb*beta)
+        vel_cmd = max(-self.MAX_SPEED, min(self.MAX_SPEED, self.kp*rho))
+        omega_cmd = max(-self.MAX_OMEGA, min(self.MAX_OMEGA, self.ka*alpha + self.kb*beta))
 
         return([vel_cmd, omega_cmd, 0])
         pass

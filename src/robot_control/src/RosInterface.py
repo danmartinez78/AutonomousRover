@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 ROS based interface for the Course Robotics Specialization Capstone Autonomous Rover.
-Updated June 15 2016.
+Updated Jul 22 2016.
 """
 # ROS imports
 import roslib
@@ -48,8 +48,10 @@ class ROSInterface(object):
         self._no_detection=True
         self._no_imu=True
         self._imu = None
-        self._t = None
-        self._R = None
+        self._t = []
+        self._R = []
+        self._angle = []
+        self._marker_num = []
         self._R_cam2bot = np.array([[0,0,1,0],[1,0,0,0],[0,1,0,0],[0,0,0,1]])
         self._t_cam2bot = t_cam_to_body
         self._R_tag2bot = np.array([[0,-1,0,0],[0,0,1,0],[-1,0,0,0],[0,0,0,1]])
@@ -65,14 +67,20 @@ class ROSInterface(object):
         """
         if (len(posearray.detections)==0):
             return
-        (self._t, self._R) = get_t_R(posearray.detections[0].pose.pose)
-        self._angle = -np.arctan2(-self._R[2,0],np.sqrt(self._R[2,0]**2+self._R[2,2]**2))
-        if math.isnan(self._angle):
-            return
-        self._R = np.dot(np.dot(self._R_cam2bot, self._R),self._R_tag2bot)
-        self._t = np.dot(self._R_cam2bot, self._t)+self._t_cam2bot
-        self._marker_num = posearray.detections[0].id
-        self._no_detection = False
+        self._t = []
+        self._R = []
+        self._angle = []
+        self._marker_num = []
+        for marker in range(len(posearray.detections)):
+            (t, R) = get_t_R(posearray.detections[marker].pose.pose)
+            ang = -np.arctan2(-R[2,0],np.sqrt(R[2,0]**2+R[2,2]**2))
+            if math.isnan(ang):
+                continue
+            self._R.append(np.dot(np.dot(self._R_cam2bot, R),self._R_tag2bot))
+            self._t.append(np.dot(self._R_cam2bot, t)+self._t_cam2bot)
+            self._angle.append(ang)
+            self._marker_num.append(posearray.detections[marker].id)
+            self._no_detection = False
 
     def _imu_callback(self, imu):
         """
@@ -95,9 +103,12 @@ class ROSInterface(object):
         if self._no_detection:
             return None
         self._no_detection = True
-        dx = self._t[0,0]
-        dy = self._t[1,0]
-        return [[dx,dy,self._angle,self._marker_num]]
+        detections = []
+        for marker in range(len(self._angle)):
+            dx = self._t[marker][0,0]
+            dy = self._t[marker][1,0]
+            detections.append([dx, dy, self._angle[marker], self._marker_num[marker]])
+        return detections
 
     def command_velocity(self,vx,wz):
         """
